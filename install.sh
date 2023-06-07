@@ -144,7 +144,7 @@ sudo apt update
 echo " - Updating the OS..."
 sudo apt upgrade
 echo " - Installing libvirtd + QEMU..."
-sudo apt -y install bridge-utils cpu-checker libvirt-clients libvirt-daemon qemu qemu-kvm
+sudo apt -y install cpu-checker qemu-kvm qemu-utils libvirt-daemon-system libvirt-clients bridge-utils ovmf
 echo "2. Checking virtualization compatibility..."
 
 if [ ! -f "/dev/kvm" ]; then 
