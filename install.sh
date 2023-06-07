@@ -147,7 +147,9 @@ echo " - Installing libvirtd + QEMU..."
 sudo apt -y install cpu-checker qemu-kvm qemu-utils libvirt-daemon-system libvirt-clients bridge-utils ovmf
 echo "2. Checking virtualization compatibility..."
 
-if [ ! -f "/dev/kvm" ]; then 
+sudo kvm-ok
+
+if [ $? == 1 ]; then 
   echo "Cannot find the Linux KVM device!"
   echo "You need to enable virtualization in your BIOS."
   win_exit
