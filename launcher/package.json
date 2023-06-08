@@ -1,0 +1,13 @@
+{
+  "name": "immutable10-launcher",
+  "version": "0.0.1",
+  "description": "Launches Immutable10, and coordinates services behind the scenese.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "deno run --allow-sys index.mjs",
+    "build": "deno compile --allow-sys --target x86_64-unknown-linux-gnu index.mjs"
+  },
+  "author": "@creamy-dev",
+  "license": "BSD-3-Clause"
+}
