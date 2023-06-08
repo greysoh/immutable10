@@ -156,14 +156,18 @@ if [ $? == 1 ]; then
   win_exit
 fi
 
-echo "3. Downloading Windows..."
+echo "3. Downloading ISO images..."
 
 # Download the Windows 10/11 ISO
+echo " - Downloading VirtIO drivers..."
+curl -L "https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso" -o ~/virtio-win.iso
+
+echo " - Downloading Windows..."
 echo "Due to fetching the Windows 10 or 11 ISO not being directly implemented, you need to copy the URL generated from Microsoft's website."
 printf "Copy/Type out the Windows ISO URL generated here: "
 read windows_iso_path
 
-curl -L $windows_iso_path -o Windows.iso
+curl -L $windows_iso_path -o ~/Windows.iso
 
 echo "4. Downloading the launcher..."
 if [ "$DEBUG" == "true" ]; then
