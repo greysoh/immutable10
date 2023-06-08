@@ -35,6 +35,13 @@ done;`);
       const pciType = line.replace(pciId, "").split("[")[0].trim();
       const pciName = line.split(": ")[1];
 
+      if (pciId == "00:00.0" && groups.length != 0) {
+        console.warn("WARNING: Premature Array write detected! Fixing...");
+
+        groups.splice(0, groups.length);
+        group.splice(0, group.length);
+      }
+
       const info = {
         pciId,
         pciType,
