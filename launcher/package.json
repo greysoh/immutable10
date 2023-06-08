@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "deno run --allow-sys --allow-read --allow-run index.mjs",
-    "build": "deno compile --allow-read --allow-sys --allow-run --target x86_64-unknown-linux-gnu index.mjs"
+    "start": "deno run --allow-sys --allow-read --allow-write --allow-run index.mjs",
+    "build": "deno compile --allow-read --allow-write --allow-sys --allow-run --target x86_64-unknown-linux-gnu index.mjs"
   },
   "author": "@creamy-dev",
   "license": "BSD-3-Clause"

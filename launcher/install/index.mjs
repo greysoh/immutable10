@@ -1,3 +1,4 @@
+import { getEligibleIOMMUGroups } from "./libs/getEligibleIOMMUGroups.mjs";
 import { getRootPartitionSize } from "./libs/getRootPartitionSize.mjs";
 
 function yesOrNo(promptStr) {
@@ -75,5 +76,8 @@ export async function installer() {
   console.log("Final storage size (in gigabytes, rounded): " + Math.floor(newPartitionSize));
 
   console.log("\n############ PCIe CONFIGURATION ############");
-  console.log("TODO");
+  if (Deno.build.os == "windows") throw new Error("Windows cannot be used beyond this point.");
+
+  const iommuGroups = await getEligibleIOMMUGroups();
+  console.log(iommuGroups);
 }
