@@ -9,5 +9,5 @@ export async function getRootPartitionSize() {
   const deviceStorageSpace = await df();
   const rootStorageSize = deviceStorageSpace.find((i) => i.mountedAt == "/");
 
-  return (rootStorageSize.used+rootStorageSize.available)/(1024*1024);
+  return (rootStorageSize.available)/(1024*1024);
 }

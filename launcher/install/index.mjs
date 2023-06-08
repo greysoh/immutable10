@@ -71,7 +71,7 @@ export async function installer() {
   const rootPartitionSize = await getRootPartitionSize();
   const shouldRoundDownStorage = yesOrNo("Would you like to round down your storage, to make it look more realistic?");
 
-  const newPartitionSize = shouldRoundDownStorage ? terriblyBruteForceRoundingDownCPUOrMemory(rootPartitionSize-32, 25) : rootPartitionSize-32;
+  const newPartitionSize = shouldRoundDownStorage ? terriblyBruteForceRoundingDownCPUOrMemory(rootPartitionSize/2, 25) : rootPartitionSize/2;
   console.log("Final storage size (in gigabytes, rounded): " + Math.floor(newPartitionSize));
 
   console.log("\n############ PCIe CONFIGURATION ############");
