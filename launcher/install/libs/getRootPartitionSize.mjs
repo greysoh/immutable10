@@ -1,27 +1,42 @@
-// This function was written by AI.
-
 export async function getRootPartitionSize() {
   // Check the OS platform
   if (Deno.build.os === "windows") {
     console.log("Warning: getRootPartitionSize() is not supported on Windows. Returning 128 gigabytes.");
     return 131072;
   }
+  
+  // Start up df, and prepare for all the parsing fun!
+  const cmd = Deno.run({
+    cmd: ["df"], 
+    stdout: "piped",
+    stderr: "piped"
+  });
 
-  // Read the contents of /etc/fstab, then split it.
-  const fstab = await Deno.readTextFile("/etc/fstab");
-  const lines = fstab.split("\n");
+  const output = await cmd.output();
+  cmd.close();
 
-  // Find the line that contains the root partition
-  const rootLine = lines.find(line => line.includes(" / "));
+  const outputIntoString = new TextDecoder().decode(output);
 
-  if (!rootLine) {
-    throw new Error("Could not find root partition in /etc/fstab");
+  const outputSplitByNewLine = outputIntoString.split(" ").filter((i) => i != "").join(" ").split("\n");
+  outputSplitByNewLine.shift();
+
+  const itemObject = [];
+
+  for (const item of outputSplitByNewLine) {
+    const itemIndividualPieces = item.split(" ");
+    if (itemIndividualPieces[0] == "") continue;
+
+    itemObject[itemObject.length] = {
+      path: itemIndividualPieces[0],
+      blocksAllocated1K: itemIndividualPieces[1],
+      used: parseInt(itemIndividualPieces[2]),
+      available: parseInt(itemIndividualPieces[3]),
+      mountedAt: itemIndividualPieces[5],
+    }
   }
 
-  // Extract the device name from the line
-  const device = rootLine.split(" ")[0];
+  const item = itemObject.find((i) => i.mountedAt == "/");
+  console.log((item.used+item.available)/(1024*1024));
 
-  // Get the file info for the device, then serve it in megabytes
-  const fileInfo = await Deno.stat(device);
-  return fileInfo.size / (1024 * 1024);
+  return (item.used+item.available)/(1024*1024);
 }
