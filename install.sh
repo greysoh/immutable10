@@ -5,6 +5,8 @@ if [ "$DEBUG" == "true" ]; then
   echo "Debugging is enabled."
 fi
 
+LAUNCHER_BUILT_PATH_LATEST = ""
+
 cat << EOF
  ___  _____ ______   _____ ______   ___  ___  _________  ________  ________  ___       _______     _____  ________     
 |\\  \\|\\   _ \\  _   \\|\\   _ \\  _   \\|\\  \\|\\  \\|\\___   ___\\\\   __  \\|\\   __  \\|\\  \\     |\\  ___ \\   / __  \\|\\   __  \\    
@@ -96,7 +98,6 @@ EOF
   sudo python3 tmp_add_iommu.py $cpu_vendor
 
   if [ $? == 1 ]; then
-
     echo "Failed to add IOMMU support!"
     echo "You can try the script again, or manually enable IOMMU:"
     echo "See: https://access.redhat.com/documentation/en-us/red_hat_virtualization/4.1/html/installation_guide/appe-configuring_a_hypervisor_host_for_pci_passthrough"
@@ -129,12 +130,12 @@ echo "For ease of use, we will automatically set up the created Windows install,
 echo "However, you would need to agree to the Windows EULA, which is avaliable at:"
 echo "  - Windows 10: https://www.microsoft.com/en-us/Useterms/Retail/Windows/10/UseTerms_Retail_Windows_10_English.htm"
 echo "  - Windows 11: https://www.microsoft.com/en-us/UseTerms/Retail/Windows/11/UseTerms_Retail_Windows_11_English.htm"
-printf "\n(Y/n) Do you agree to the Microsoft EULA? "
+printf "\n(Y/n) Do you agree to the Microsoft Windows EULA? "
 read does_agree
 
 # Check if does_agree, converted to lowercase, does not start with y.
 if [[ "${does_agree,,}" != y* ]]; then
-  echo "You did not agree to the Windows EULA! Exiting..."
+  echo "You did not agree to the Microsoft Windows EULA! Exiting..."
   win_exit
 fi
 
@@ -153,4 +154,28 @@ if [ $? == 1 ]; then
   echo "Cannot find the Linux KVM device!"
   echo "You need to enable virtualization in your BIOS."
   win_exit
+fi
+
+echo "3. Downloading Windows..."
+
+# Download the Windows 10/11 ISO
+echo "Due to fetching the Windows 10 or 11 ISO not being directly implemented, you need to copy the URL generated from Microsoft's website."
+printf "Copy/Type out the Windows ISO URL generated here: "
+read windows_iso_path
+
+curl -L $windows_iso_path -o Windows.iso
+
+echo "4. Downloading the launcher..."
+if [ "$DEBUG" == "true" ]; then
+  echo "You must specify the path to the launcher executable."
+  printf "Path: "
+  read path
+
+  curl $path > ~/launcher
+  chmod +x ~/launcher
+  ~/launcher install
+else
+  curl $LAUNCHER_BUILT_PATH_LATEST > ~/launcher
+  chmod +x ~/launcher
+  ~/launcher install
 fi
