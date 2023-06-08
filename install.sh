@@ -146,8 +146,13 @@ echo " - Updating the OS..."
 sudo apt upgrade
 echo " - Installing libvirtd + QEMU..."
 sudo apt -y install cpu-checker qemu-kvm qemu-utils libvirt-daemon-system libvirt-clients bridge-utils ovmf
-echo "2. Checking virtualization compatibility..."
+echo " - Setting up libvirtd..."
+sudo systemctl enable --now libvirtd
+sudo virsh net-start default
+sudo virsh net-autostart default
 
+sudo usermod -aG kvm,input,libvirt $USER
+echo "2. Checking virtualization compatibility..."
 sudo kvm-ok
 
 if [ $? == 1 ]; then 
@@ -157,7 +162,6 @@ if [ $? == 1 ]; then
 fi
 
 echo "3. Downloading ISO images..."
-
 # Download the Windows 10/11 ISO
 echo " - Downloading VirtIO drivers..."
 curl -L "https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso" -o ~/virtio-win.iso
@@ -169,7 +173,7 @@ read windows_iso_path
 
 curl -L $windows_iso_path -o ~/Windows.iso
 
-echo "4. Downloading the launcher..."
+echo "4. Running stage2 installer..."
 if [ "$DEBUG" == "true" ]; then
   echo "You must specify the path to the launcher executable."
   printf "Path: "
