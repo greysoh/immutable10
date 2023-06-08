@@ -6,7 +6,7 @@ function yesOrNo(promptStr) {
   return userInput.toLowerCase().startsWith("y");
 }
 
-function terriblyBruteForceRoundingDownCPUOrMemory(number, count) {
+function terriblyBruteForceRoundingDownCPUOrMemory(number, count) {  
   let prevResult = Math.pow(2, count);
 
   for (let i = count; i > 0; i--) {
@@ -60,7 +60,7 @@ export async function installer() {
 
   console.log("\n############ MEMORY CONFIGURATION ############");
 
-  const totalSystemMemory = Math.floor(Deno.systemMemoryInfo().total/1024);
+  const totalSystemMemory = Math.floor(Deno.systemMemoryInfo().total/1024/(Deno.build.os == "linux" ? 1024 : 1));
   
   const shouldRoundDownMem = yesOrNo("Would you like to round down your virtual memory, to make it look more realistic?");
   const totalMemory = shouldRoundDownMem ? terriblyBruteForceRoundingDownCPUOrMemory((totalSystemMemory-2048), 20) : (totalSystemMemory-2048);
@@ -71,8 +71,8 @@ export async function installer() {
   const rootPartitionSize = await getRootPartitionSize();
   const shouldRoundDownStorage = yesOrNo("Would you like to round down your storage, to make it look more realistic?");
 
-  const newPartitionSize = shouldRoundDownStorage ? terriblyBruteForceRoundingDownCPUOrMemory(rootPartitionSize-(32*1024), 25) : rootPartitionSize-(32*1024);
-  console.log("Final storage size (in gigabytes, rounded): " + Math.floor(newPartitionSize/1024));
+  const newPartitionSize = shouldRoundDownStorage ? terriblyBruteForceRoundingDownCPUOrMemory(rootPartitionSize-32, 25) : rootPartitionSize-32;
+  console.log("Final storage size (in gigabytes, rounded): " + Math.floor(newPartitionSize));
 
   console.log("\n############ PCIe CONFIGURATION ############");
   console.log("TODO");
