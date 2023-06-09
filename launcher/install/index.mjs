@@ -1,5 +1,5 @@
 // I don't know half the errors in this library, but it works well.
-import { parse, stringify } from "https://deno.land/x/xml/mod.ts";
+import { parse, stringify } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
 import { addToBridge } from "./libs/bridgeAdd.mjs";
 import { getEligibleIOMMUGroups } from "./libs/getEligibleIOMMUGroups.mjs";
@@ -82,12 +82,19 @@ export async function installer() {
   console.log("Final storage size (in gigabytes, rounded): " + Math.floor(newPartitionSize));
 
   console.log("\n############ PCIe CONFIGURATION ############");
+  // Windows can kinda be used before this, as a way to test memory, storage, and CPU cores,
+  // but, after this, we run Linux shell commands, so it can't work anymore.
+
   if (Deno.build.os == "windows") throw new Error("Windows cannot be used beyond this point.");
 
   const iommuGroups = await getEligibleIOMMUGroups();
   console.log("Searching for eligible PCI devices...");
   
+  // PCI ids of devices to passthrough in lspci format.
+  // We need to convert this later, however, into the VFIO format.
   const passthroughDevices = [];
+
+  // Guess the names of the drivers, to unload/reload.
   const gpuLikelyDriverNames = [];
   const hdaLikelyDriverNames = [];
   const miscDriverNames = [];
@@ -95,12 +102,18 @@ export async function installer() {
   for (const iommuGroup of iommuGroups) {
     const currentIOMMUGroup = iommuGroups.indexOf(iommuGroup);
 
+    // This crashes your PC if you try to pass it through.
+    // See: https://www.reddit.com/r/VFIO/comments/rgpest/quick_question_about_intel_sram_pch/
+
     if (iommuGroup.some((i) => i.pciName.includes("SRAM"))) {
       console.error("ERROR: Cannot passthrough current IOMMU group!");
       console.error("Reason: SRAM/potential PCH. This will crash your computer if you pass this through.");
 
       continue;
     } else if (iommuGroup.length > 1) {
+      // If the iommuGroup has more than 2 devices, and the 2nd device is not a PCI a bridge,
+      // we give a warning and ask if they want to continue iterating over these devices.
+
       if (iommuGroup.length != 2 && !iommuGroup.some((i) => i.pciType == "PCI bridge")) {
         console.log("WARNING: More than 1 device vendor found in the current IOMMU group!");
         console.log("If there is a device in this IOMMU group that you want, you would need to pass through all of them.");
@@ -131,6 +144,8 @@ export async function installer() {
           if (passthroughDevices.indexOf(device.pciId) == -1) passthroughDevices.push(device.pciId);
           addToBridge(iommuGroup, passthroughDevices);
 
+          // Attempt to detect the GPU drivers. This should likely be replaced with a more intelligent
+          // check, someday. The only thing stopping that, is the fact that I'm lazy.
           if (device.pciName.startsWith("Intel")) {
             gpuLikelyDriverNames.push("i915");
           } else if (device.pciName.startsWith("NVIDIA")) {
@@ -168,7 +183,10 @@ export async function installer() {
     }
   }
 
+  // Great workaround.
   let hasShownIOMMUList = false;
+
+  // Wait until the user says no.
   while (yesOrNo("Would you like to add more PCIe devices?")) {
     if (!hasShownIOMMUList) {
       for (const iommuGroup of iommuGroups) {
@@ -185,6 +203,7 @@ export async function installer() {
     const iommuGroupToPassThrough = prompt("What IOMMU group would you like to pass through?");
     const iommuGroupNum = parseInt(iommuGroupToPassThrough.trim());
 
+    // Check if the iommuGroupNumber is a number, and then check if it's in range.
     if (iommuGroupNum != iommuGroupNum) {
       console.error("Not a number!");
       continue;
@@ -195,7 +214,8 @@ export async function installer() {
 
     passthroughDevices.push(...iommuGroups[iommuGroupNum].map((i) => i.pciId));
 
-    if (!yesOrNo("Do the drivers for each device support hotplug (ex. graphics cards need this off)?")) {
+    // If the drivers support hotplug (ex. like a USB card), Linux takes care of everything.
+    if (!yesOrNo("Do the drivers for each device support hotplug (ex. USB cards)?")) {
       const drivers = prompt("What are the drivers needed for each card (space seperated value)?");
       const driverList = drivers.split(" ");
 
@@ -211,6 +231,7 @@ export async function installer() {
   prompt("\nPress any key to start the virtual machine configuration process.");
   console.log("Creating virtual machine...");
 
+  // Paths to all the different disks and ISOs.
   const diskDir = `${Deno.env.get("HOME")}/Windows.qcow2`;
   const windowsISO = `${Deno.env.get("HOME")}/Windows.iso`;
   const virtioISO = `${Deno.env.get("HOME")}/virtio-win.iso`;
@@ -234,6 +255,7 @@ export async function installer() {
 
   console.log(" - Creating virtual machine XML...");
   
+  // Options to create the VM with.
   const opts = [
     "--name=Immutable10VM",
     `--ram=${totalMemory}`,
@@ -249,6 +271,8 @@ export async function installer() {
     `--check='path_in_use=off'`
   ];
 
+  // We recreate the names of the PCI devices because the IDs we store are in the lspci format.
+  // (mentioned above)
   const regeneratedPCIDevices = passthroughDevices.map((i) => `pci_0000_${i.replace(":", "_").replace(".", "_")}`);
 
   for (const device of regeneratedPCIDevices) {
@@ -260,7 +284,10 @@ virt-install ${opts.join(" ")}`);
   
   console.log(" - Opening VM for writing...");
   const vmOutputXML = new TextDecoder().decode(vmOutput);
-  const vmOutputXMLFix = vmOutputXML.split("</domain>")[0] + "</domain>";
+  
+  // I don't know if I'm doing it wrong, but for some reason, virt-install w/ XML exporting
+  // returns 2 xml documents(?). So I have to do this madness.
+  const vmOutputXMLFix = vmOutputXML.split("</domain>")[0] + "</domain>"; // This is fine.
 
   const vmXML = parse(vmOutputXMLFix);
 
@@ -282,6 +309,7 @@ virt-install ${opts.join(" ")}`);
 
   console.log(" - Setting up hooks...");
 
+  // Scripts burrowed from https://github.com/QaidVoid/Complete-Single-GPU-Passthrough
   // Actual path: /etc/libvirt/hooks/qemu
   await Deno.writeTextFile("/tmp/hooksdispatch", `#!/bin/bash
 
@@ -365,6 +393,7 @@ echo 1 > /sys/class/vtconsole/vtcon1/bind`;
   // Very hacky but I'm too lazy to add proper root support.
   console.log(" - Saving settings...");
   
+  // Incase you wanted to see why we had to boot Windows out, this is why.
   await runAndExecuteBash(`
 #!/bin/bash
 set -x
