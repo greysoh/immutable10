@@ -1,6 +1,10 @@
+// I don't know half the errors in this library, but it works well.
+import { parse, stringify } from "https://deno.land/x/xml/mod.ts";
+
 import { addToBridge } from "./libs/bridgeAdd.mjs";
 import { getEligibleIOMMUGroups } from "./libs/getEligibleIOMMUGroups.mjs";
 import { getRootPartitionSize } from "./libs/getRootPartitionSize.mjs";
+import { runAndExecuteBash } from "./libs/runAndExecuteBashScript.mjs";
 
 function yesOrNo(promptStr) {
   const userInput = prompt(promptStr);
@@ -203,4 +207,181 @@ export async function installer() {
   console.log("GPU drivers to disable/enable: %s", gpuLikelyDriverNames.join(" "));
   console.log("HDA drivers to disable/enable: %s", hdaLikelyDriverNames.join(" "));
   console.log("Misc drivers to disable/enable: %s", miscDriverNames.join(" "));
+
+  prompt("\nPress any key to start the virtual machine configuration process.");
+  console.log("Creating virtual machine...");
+
+  const diskDir = `${Deno.env.get("HOME")}/Windows.qcow2`;
+  const windowsISO = `${Deno.env.get("HOME")}/Windows.iso`;
+  const virtioISO = `${Deno.env.get("HOME")}/virtio-win.iso`;
+
+  console.log(" - Creating hard disk...");
+  const diskCreationCmd = Deno.run({
+    cmd: ["qemu-img", "create", "-f", "qcow2", diskDir, `${newPartitionSize}G`], 
+    stdout: "piped",
+    stderr: "piped"
+  });
+
+  const diskOutput = await diskCreationCmd.output();
+  diskCreationCmd.close();
+  
+  const diskOutputString = new TextDecoder().decode(diskOutput);
+
+  for (const line of diskOutputString.split("\n")) {
+    if (line == "") continue;
+    console.log(`   - ${line}`);
+  }
+
+  console.log(" - Creating virtual machine XML...");
+  
+  const opts = [
+    "--name=Immutable10VM",
+    `--ram=${totalMemory}`,
+    `--vcpus='sockets=1,cores=${cpuInfo.cores},threads=${cpuInfo.threads}'`,
+    `--cpuset='0-${(cpuInfo.cores*cpuInfo.threads)-1}'`,
+    `--disk='path=${diskDir},bus=sata,startup_policy=optional,boot_order=1,size=${newPartitionSize}'`,
+    `--cdrom='${windowsISO}'`,
+    `--disk='device=cdrom,path=${virtioISO},bus=sata,boot_order=3'`,
+    `--graphics=none`,
+    `--osinfo=win10`,
+    `--print-xml`,
+    `--boot=uefi`,
+    `--check='path_in_use=off'`
+  ];
+
+  const regeneratedPCIDevices = passthroughDevices.map((i) => `pci_0000_${i.replace(":", "_").replace(".", "_")}`);
+
+  for (const device of regeneratedPCIDevices) {
+    opts.push(`--host-device='${device}'`);
+  }
+
+  const vmOutput = await runAndExecuteBash(`#!/bin/bash
+virt-install ${opts.join(" ")}`);
+  
+  console.log(" - Opening VM for writing...");
+  const vmOutputXML = new TextDecoder().decode(vmOutput);
+  const vmOutputXMLFix = vmOutputXML.split("</domain>")[0] + "</domain>";
+
+  const vmXML = parse(vmOutputXMLFix);
+
+  console.log(" - Enabling QoL features...");
+  vmXML.domain.features.kvm = {
+    "hidden": {
+      "@state": "on",
+      "#text": null
+    }
+  };
+
+  vmXML.domain.os.bootmenu = {
+    "@enable": "yes",
+    "#text": null
+  };
+
+  console.log(" - Importing created VM XML...");
+  await Deno.writeTextFile("/tmp/vm.xml", stringify(vmXML));
+
+  console.log(" - Setting up hooks...");
+
+  // Actual path: /etc/libvirt/hooks/qemu
+  await Deno.writeTextFile("/tmp/hooksdispatch", `#!/bin/bash
+
+GUEST_NAME="$1"
+HOOK_NAME="$2"
+STATE_NAME="$3"
+MISC="\${@:4}"
+  
+BASEDIR="$(dirname $0)"
+  
+HOOKPATH="$BASEDIR/qemu.d/$GUEST_NAME/$HOOK_NAME/$STATE_NAME"
+set -e # If a script exits with an error, we should as well.
+  
+if [ -f "$HOOKPATH" ]; then
+eval \""$HOOKPATH"\" "$@"
+elif [ -d "$HOOKPATH" ]; then
+while read file; do 
+eval \""$file"\" "$@"
+done <<< "$(find -L "$HOOKPATH" -maxdepth 1 -type f -executable -print;)"
+fi`);
+
+  let startCommand = `#!/bin/bash
+set -x
+        
+# Unbind VTconsoles: might not be needed
+echo 0 > /sys/class/vtconsole/vtcon0/bind
+echo 0 > /sys/class/vtconsole/vtcon1/bind
+    
+# Unbind EFI Framebuffer
+echo efi-framebuffer.0 > /sys/bus/platform/drivers/efi-framebuffer/unbind
+    
+# Unload GPU kernel modules
+${gpuLikelyDriverNames.length != 0 ? `modprobe -r ${gpuLikelyDriverNames.join(" ")}` : ""}
+    
+# Unload audio kernel modules
+${hdaLikelyDriverNames.length != 0 ? `modprobe -r ${hdaLikelyDriverNames.join(" ")}` : ""}
+  
+# Unload misc kernel modules
+${miscDriverNames.length != 0 ? `modprobe -r ${miscDriverNames.join(" ")}` : ""}
+    
+# Detach a whole bunch of shit from the host
+`;
+
+  for (const device of regeneratedPCIDevices) {
+    startCommand += `virsh nodedev-detach ${device}\n`;   
+  }
+
+  startCommand += `# Load VFIO\nmodprobe vfio-pci`;
+
+  let endCommand = `#!/bin/bash\nset -x\n\n# Reattach a whole bunch of shit from the host\n`;
+  for (const device of regeneratedPCIDevices) {
+    endCommand += `virsh nodedev-reattach ${device}\n`;   
+  }
+
+  endCommand += `
+# Unload VFIO
+modprobe -r vfio-pci
+
+# Rebind framebuffer to host
+echo "efi-framebuffer.0" > /sys/bus/platform/drivers/efi-framebuffer/bind
+
+# Load GPU kernel modules
+${gpuLikelyDriverNames.length != 0 ? `modprobe ${gpuLikelyDriverNames.join(" ")}` : ""}
+    
+# Load audio kernel modules
+${hdaLikelyDriverNames.length != 0 ? `modprobe ${hdaLikelyDriverNames.join(" ")}` : ""}
+  
+# Load misc kernel modules
+${miscDriverNames.length != 0 ? `modprobe ${miscDriverNames.join(" ")}` : ""}
+
+# Bind VTconsoles: might not be needed
+echo 1 > /sys/class/vtconsole/vtcon0/bind
+echo 1 > /sys/class/vtconsole/vtcon1/bind`;
+  
+  // Actual path: /etc/libvirt/hooks/qemu.d/Immutable10VM/prepare/begin/start.sh
+  await Deno.writeTextFile("/tmp/start.sh", startCommand);
+
+  // Actual path: /etc/libvirt/hooks/qemu.d/Immutable10VM/release/end/stop.sh
+  await Deno.writeTextFile("/tmp/stop.sh", endCommand);
+
+  // Very hacky but I'm too lazy to add proper root support.
+  console.log(" - Saving settings...");
+  
+  await runAndExecuteBash(`
+#!/bin/bash
+set -x
+echo "Hello to your empending doom. Bash inside JavaScript - GH"
+
+chmod +x /tmp/hooksdispatch
+chmod +x /tmp/start.sh
+chmod +x /tmp/stop.sh
+
+sudo mkdir -p /etc/libvirt/hooks
+sudo mkdir -p /etc/libvirt/hooks/qemu.d/Immutable10VM/prepare/begin
+sudo mkdir -p /etc/libvirt/hooks/qemu.d/Immutable10VM/release/end
+
+sudo cp /tmp/hooksdispatch /etc/libvirt/hooks/qemu
+sudo cp /tmp/start.sh /etc/libvirt/hooks/qemu.d/Immutable10VM/prepare/begin/start.sh
+sudo cp /tmp/stop.sh /etc/libvirt/hooks/qemu.d/Immutable10VM/release/end/stop.sh
+
+virsh define /tmp/vm.xml
+`, true);
 }

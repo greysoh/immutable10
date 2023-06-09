@@ -145,11 +145,15 @@ sudo apt update
 echo " - Updating the OS..."
 sudo apt upgrade
 echo " - Installing libvirtd + QEMU..."
-sudo apt -y install cpu-checker qemu-kvm qemu-utils libvirt-daemon-system libvirt-clients bridge-utils ovmf
+sudo apt -y install cpu-checker qemu-kvm qemu-utils libvirt-daemon-system libvirt-clients bridge-utils ovmf virtinst
 echo " - Setting up libvirtd..."
 sudo systemctl enable --now libvirtd
 sudo virsh net-start default
 sudo virsh net-autostart default
+
+echo "user = root" | sudo tee -a /etc/libvert/qemu.conf
+echo "group = root" | sudo tee -a /etc/libvert/qemu.conf
+echo "dynamic_ownership = 1" | sudo tee -a /etc/libvert/qemu.conf
 
 sudo usermod -aG kvm,input,libvirt $USER
 echo "2. Checking virtualization compatibility..."
