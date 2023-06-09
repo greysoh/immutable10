@@ -1,30 +1,12 @@
 // I don't know half the errors in this library, but it works well.
 import { parse, stringify } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
+import { yesOrNo } from "./libs/yesOrNo.mjs";
 import { addToBridge } from "./libs/bridgeAdd.mjs";
-import { getEligibleIOMMUGroups } from "./libs/getEligibleIOMMUGroups.mjs";
 import { getRootPartitionSize } from "./libs/getRootPartitionSize.mjs";
 import { runAndExecuteBash } from "./libs/runAndExecuteBashScript.mjs";
-
-function yesOrNo(promptStr) {
-  const userInput = prompt(promptStr);
-  if (userInput == "" || typeof userInput == "undefined") return true;
-
-  return userInput.trim().toLowerCase().startsWith("y");
-}
-
-function terriblyBruteForceRoundingDownCPUOrMemory(number, count) {  
-  let prevResult = Math.pow(2, count);
-
-  for (let i = count; i > 0; i--) {
-    const multiple = prevResult/2;
-    prevResult = multiple;
-
-    if (multiple < number) return multiple;
-  }
-
-  return number;
-}
+import { getEligibleIOMMUGroups } from "./libs/getEligibleIOMMUGroups.mjs";
+import { terriblyBruteForceRoundingDownCPUOrMemory } from "./libs/terriblyBruteForceRounding.mjs";
 
 export async function installer() {
   console.log("\n############ CPU CONFIGURATION ############");
