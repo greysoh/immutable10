@@ -1,6 +1,7 @@
 import { waitIncludingKeyPress } from "./libs/waitkeypress.mjs";
 import { installer } from "./install/index.mjs";
 import { choiceMenu } from "./libs/textmode.mjs";
+import { start } from "./start/index.mjs";
 import { verInfo } from "./ver.mjs";
 
 console.log(`Immutable10 Launcher ${verInfo.ver} ("${verInfo.codename}")`)
@@ -18,8 +19,13 @@ if (Deno.args[0]) {
 
   if (!keyPressCheck) {
     console.log("Hit any key to skip autoboot: 0");
-    console.log("TODO");
-    Deno.exit(0);
+    
+    try {
+      await start();
+    } catch (e) {
+      console.log(e);
+      Deno.exit(0);
+    }
   }
 
   const optMenu = choiceMenu("Choose an option:", "Diagnostics...", "Install");
