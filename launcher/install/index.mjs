@@ -1,10 +1,8 @@
-// I don't know half the errors in this library, but it works well.
 import { parse, stringify } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
 import { yesOrNo } from "./libs/yesOrNo.mjs";
-import { addToBridge } from "./libs/bridgeAdd.mjs";
-import { getRootPartitionSize } from "./libs/getRootPartitionSize.mjs";
 import { runAndExecuteBash } from "./libs/runAndExecuteBashScript.mjs";
+import { getRootPartitionSize } from "./libs/getRootPartitionSize.mjs";
 import { getEligibleIOMMUGroups } from "./libs/getEligibleIOMMUGroups.mjs";
 import { terriblyBruteForceRoundingDownCPUOrMemory } from "./libs/terriblyBruteForceRounding.mjs";
 
@@ -111,7 +109,7 @@ export async function installer() {
         if (yesOrNo("Is there any in this pool that you want, and can pass through all of them safely?")) {
           console.log("Adding all devices!");
 
-          passthroughDevices.push(...iommuGroup.map((i) => i.pciId));
+          passthroughDevices.push(...iommuGroup.map((i) => i.pciType != "PCI bridge" ? i.pciId : undefined).filter(Boolean));
         } else {
           console.log("Disabling passthrough of ANY device!");
           continue;
@@ -124,7 +122,6 @@ export async function installer() {
         case "VGA compatible controller": {
           console.log(" - Found VGA device!");
           if (passthroughDevices.indexOf(device.pciId) == -1) passthroughDevices.push(device.pciId);
-          addToBridge(iommuGroup, passthroughDevices);
 
           // Attempt to detect the GPU drivers. This should likely be replaced with a more intelligent
           // check, someday. The only thing stopping that, is the fact that I'm lazy.
@@ -142,7 +139,6 @@ export async function installer() {
         case "Audio device": {
           console.log(" - Found audio device!");
           if (passthroughDevices.indexOf(device.pciId) == -1) passthroughDevices.push(device.pciId);
-          addToBridge(iommuGroup, passthroughDevices);
           
           if (device.pciName.startsWith("NVIDIA") || device.pciName.startsWith("AMD")) {
             console.log(" - Device is NVIDIA/AMD. Skipping.");
@@ -157,7 +153,6 @@ export async function installer() {
         case "USB controller": {
           console.log(" - Found USB device!");
           if (passthroughDevices.indexOf(device.pciId) == -1) passthroughDevices.push(device.pciId);
-          addToBridge(iommuGroup, passthroughDevices);
 
           break;
         }
