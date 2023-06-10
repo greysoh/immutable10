@@ -1,6 +1,6 @@
-import { waitIncludingKeyPress } from "./libwaitkeypress.mjs";
+import { waitIncludingKeyPress } from "./libs/waitkeypress.mjs";
 import { installer } from "./install/index.mjs";
-import { choiceMenu } from "./libtextmode.mjs";
+import { choiceMenu } from "./libs/textmode.mjs";
 import { verInfo } from "./ver.mjs";
 
 console.log(`Immutable10 Launcher ${verInfo.ver} ("${verInfo.codename}")`)
