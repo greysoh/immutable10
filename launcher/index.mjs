@@ -3,6 +3,7 @@ import { installer } from "./install/index.mjs";
 import { choiceMenu } from "./libs/textmode.mjs";
 import { start } from "./start/index.mjs";
 import { verInfo } from "./ver.mjs";
+import { ezPatchVBIOS } from "./diags/ezpatchVBIOS/index.js";
 
 console.log(`Immutable10 Launcher ${verInfo.ver} ("${verInfo.codename}")`)
 if (verInfo.experimental) console.log("This is EXPERIMENTAL. Your computer may catch on fire, if you use this build. Thanks!");
@@ -24,8 +25,9 @@ if (Deno.args[0]) {
       await start();
     } catch (e) {
       console.log(e);
-      Deno.exit(0);
     }
+
+    Deno.exit(0);
   }
 
   const optMenu = choiceMenu("Choose an option:", "Diagnostics...", "Install");
@@ -46,7 +48,9 @@ if (Deno.args[0]) {
         }
 
         case 1: {
-          console.log("Bro.");
+          await ezPatchVBIOS();
+
+          break;
         }
       }
 

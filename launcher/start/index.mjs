@@ -1,4 +1,4 @@
-import { runAndExecuteBash } from "../install/libs/runAndExecuteBashScript.mjs";
+import { runAndExecuteBash } from "../libs/runAndExecuteBashScript.mjs";
 
 export async function start() {
   console.log("Starting VM...")

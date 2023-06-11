@@ -1,9 +1,9 @@
 import { parse, stringify } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
-import { yesOrNo } from "./libs/yesOrNo.mjs";
-import { runAndExecuteBash } from "./libs/runAndExecuteBashScript.mjs";
+import { yesOrNo } from "../libs/yesOrNo.mjs";
+import { runAndExecuteBash } from "../libs/runAndExecuteBashScript.mjs";
 import { getRootPartitionSize } from "./libs/getRootPartitionSize.mjs";
-import { getEligibleIOMMUGroups } from "./libs/getEligibleIOMMUGroups.mjs";
+import { getEligibleIOMMUGroups } from "../libs/getEligibleIOMMUGroups.mjs";
 import { terriblyBruteForceRoundingDownCPUOrMemory } from "./libs/terriblyBruteForceRounding.mjs";
 
 export async function installer() {
@@ -85,16 +85,13 @@ export async function installer() {
     // This crashes your PC if you try to pass it through.
     // See: https://www.reddit.com/r/VFIO/comments/rgpest/quick_question_about_intel_sram_pch/
 
-    if (iommuGroup.some((i) => i.pciName.includes("SRAM"))) {
-      console.error("ERROR: Cannot passthrough current IOMMU group!");
-      console.error("Reason: SRAM/potential PCH. This will crash your computer if you pass this through.");
-
-      continue;
-    } else if (iommuGroup.length > 1) {
+    if (iommuGroup.length > 1) {
       // If the iommuGroup has more than 2 devices, and the 2nd device is not a PCI a bridge,
       // we give a warning and ask if they want to continue iterating over these devices.
 
-      if (iommuGroup.length != 2 && !iommuGroup.some((i) => i.pciType == "PCI bridge")) {
+      if (iommuGroup.length != 2 && 
+          !iommuGroup.some((i) => i.pciType == "PCI bridge") && 
+          !iommuGroup.some((i) => i.pciName.includes("SRAM"))) {
         console.log("WARNING: More than 1 device vendor found in the current IOMMU group!");
         console.log("If there is a device in this IOMMU group that you want, you would need to pass through all of them.");
         console.log("Be sure to check online if this operation is safe or not.");
@@ -109,7 +106,7 @@ export async function installer() {
         if (yesOrNo("Is there any in this pool that you want, and can pass through all of them safely?")) {
           console.log("Adding all devices!");
 
-          passthroughDevices.push(...iommuGroup.map((i) => i.pciType != "PCI bridge" ? i.pciId : undefined).filter(Boolean));
+          passthroughDevices.push(...iommuGroup.map((i) => i.pciType != "PCI bridge" && !i.pciName.includes("SRAM") ? i.pciId : undefined).filter(Boolean));
         } else {
           console.log("Disabling passthrough of ANY device!");
           continue;
@@ -189,7 +186,7 @@ export async function installer() {
       continue;
     }
 
-    passthroughDevices.push(...iommuGroups[iommuGroupNum].map((i) => i.pciId));
+    passthroughDevices.push(...iommuGroups[iommuGroupNum].map((i) => i.pciType != "PCI bridge" && !i.pciName.includes("SRAM") ? i.pciId : undefined).filter(Boolean));
 
     // If the drivers support hotplug (ex. like a USB card), Linux takes care of everything.
     if (!yesOrNo("Do the drivers for each device support hotplug (ex. USB cards)?")) {

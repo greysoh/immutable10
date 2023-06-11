@@ -1,4 +1,4 @@
-// deno-lint-ignore-file
+// deno-lint-ignore-file no-async-promise-executor
 // Needed because I need asynchronous promise executors
 import { readKeypress } from "https://deno.land/x/keypress@0.0.11/mod.ts";
 
