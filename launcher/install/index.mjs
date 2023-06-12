@@ -116,31 +116,22 @@ export async function installer() {
   for (const iommuGroup of iommuGroups) {
     const currentIOMMUGroup = iommuGroups.indexOf(iommuGroup);
 
-    // Any *SRAM* device crashes your PC if you try to pass it through.
+    // NOTE: Any *SRAM* device crashes your PC if you try to pass it through.
     // See: https://www.reddit.com/r/VFIO/comments/rgpest/quick_question_about_intel_sram_pch/
-
     // HOWEVER, probably due to the SRAM being a form of a bridge device,
     // you can omit the device safely (tested.)
 
-    if (iommuGroup.length > 1) {
-      // If the iommuGroup has more than 2 devices, and the 2nd device is not a PCI a bridge,
-      // we give a warning and ask if they want to continue iterating over these devices.
+    // If the IOMMU group has more than 1 device, to be safe, we warn the user *no matter what*.
+    // The user should be responsible for checking if passing through the current IOMMU group
+    // is compatible or not.
 
-      if (
-        iommuGroup.length != 2 &&
-        !iommuGroup.some((i) => i.pciType == "PCI bridge") &&
-        !iommuGroup.some((i) => i.pciName.includes("SRAM"))
-      ) {
+    if (iommuGroup.length > 1) {
         console.log(
-          "WARNING: More than 1 device vendor found in the current IOMMU group!"
+          "WARNING: More than 1 device found in the current IOMMU group!\n" +
+          "If there is a device in this IOMMU group that you want, you would need to pass through all of them.\n" +
+          "Be sure to check online if this operation is safe or not.\n" +
+          "Here is the current list of devices:"
         );
-        console.log(
-          "If there is a device in this IOMMU group that you want, you would need to pass through all of them."
-        );
-        console.log(
-          "Be sure to check online if this operation is safe or not."
-        );
-        console.log("Here is the current list of devices:");
 
         for (const device of iommuGroup) {
           console.log(
@@ -163,7 +154,7 @@ export async function installer() {
           passthroughDevices.push(
             ...iommuGroup
               .map((i) =>
-                i.pciType != "PCI bridge" && !i.pciName.includes("SRAM")
+                i.pciType != "PCI bridge" && i.pciType != "Host bridge" && !i.pciName.includes("SRAM")
                   ? i.pciId
                   : undefined
               )
@@ -173,7 +164,6 @@ export async function installer() {
           console.log("Disabling passthrough of ANY device!");
           continue;
         }
-      }
     }
 
     for (const device of iommuGroup) {
