@@ -12,6 +12,26 @@ if (Deno.args[0]) {
   switch (Deno.args[0]) {
     case "install": {
       await installer();
+
+      break;
+    }
+
+    case "vbios": {
+      await ezPatchVBIOS();
+
+      break;
+    }
+
+    case "start": {
+      await start();
+
+      break;
+    }
+
+    default: {
+      console.log("No arguments specified!");
+
+      break;
     }
   }
 } else {
