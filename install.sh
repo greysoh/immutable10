@@ -151,11 +151,13 @@ sudo systemctl enable --now libvirtd
 sudo virsh net-start default
 sudo virsh net-autostart default
 
-echo "user = root" | sudo tee -a /etc/libvert/qemu.conf
-echo "group = root" | sudo tee -a /etc/libvert/qemu.conf
-echo "dynamic_ownership = 1" | sudo tee -a /etc/libvert/qemu.conf
+echo "user = \"root\"" | sudo tee -a /etc/libvirt/qemu.conf
+echo "group = \"root\"" | sudo tee -a /etc/libvirt/qemu.conf
+echo "dynamic_ownership = 1" | sudo tee -a /etc/libvirt/qemu.conf
 
 sudo usermod -aG kvm,input,libvirt $USER
+
+sudo systemctl restart libvirtd
 echo "2. Checking virtualization compatibility..."
 sudo kvm-ok
 
