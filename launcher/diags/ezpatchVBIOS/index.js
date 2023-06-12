@@ -175,6 +175,7 @@ export async function ezPatchVBIOS() {
   
   await runAndExecuteBash(
     `#!/bin/bash
+    set -x
     sudo mkdir /usr/share/vgabios
     sudo cp -r ~/VBIOS/* /usr/share/vgabios
     sudo chmod -R 777 /usr/share/vgabios/*
