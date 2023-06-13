@@ -9,9 +9,6 @@ export async function initializeNetworkAPI() {
   async function trySpamLoop() {
     for (const device of virtNetDevices) {
       try {
-        // FIXME: Using a knockoff of axios is really overkill. Possibly migrate this to 
-        // using the fetch API soon? thank
-
         const abortController = new AbortController();
         setTimeout(() => abortController.abort(), 1000);
 
