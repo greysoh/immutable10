@@ -73,7 +73,7 @@ export async function ezPatchVBIOS() {
   // Finally, copy the VBIOSes locally. Doing this allows us to watch for changes, using SFTP.
   try {
     await Deno.mkdir("./VBIOS");
-  } catch (e) {
+  } catch (_e) {
     //
   }
 

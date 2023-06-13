@@ -6,6 +6,7 @@ import { runAndExecuteBash } from "../libs/runAndExecuteBashScript.mjs";
 export async function start() {
   console.log("Running VM USB enumeration...");
   const usbDevicesRaw = await getUSBDevices();
+  console.log("Running USB passthrough...");
 
   // Exclude the hubs, because I don't want my computer to catch on fire.
   const usbDevices = usbDevicesRaw.filter((i) => !i.name.includes("hub"));
