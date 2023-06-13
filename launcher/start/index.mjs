@@ -1,9 +1,7 @@
-import axiod from "https://deno.land/x/axiod@0.26.2/mod.ts";
 import { stringify } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
-import { init } from "../plusapi/index.mjs";
 import { getUSBDevices } from "../libs/getUSBDevices.mjs";
-import { getVirtNetworkDevices } from "../libs/getNetworkDevices.mjs";
+import { initializeNetworkAPI } from "../libs/initNetworkAPI.mjs";
 import { runAndExecuteBash } from "../libs/runAndExecuteBashScript.mjs";
 
 export async function start() {
@@ -52,27 +50,5 @@ export async function start() {
   await runAndExecuteBash(`#!/bin/bash\nvirsh start Immutable10VM`);
 
   console.log("Starting networking extensions...");
-  console.log(" - INIT TASK: Starting 'hello' request loop...");
-  const virtNetDevices = await getVirtNetworkDevices();
-
-  async function trySpamLoop() {
-    for (const device of virtNetDevices) {
-      try {
-        // FIXME: Using a knockoff of axios is really overkill. Possibly migrate this to 
-        // using the fetch API soon? thank
-        await axiod.get(`http://${device.ipAddress.replace("/24", "")}/api/v1/hello`, {
-          timeout: 1000
-        });
-      } catch (_e) {
-        //
-      }
-    }
-    
-    setTimeout(trySpamLoop, 5000);
-  }
-
-  trySpamLoop();
-
-  console.log(" - INIT TASK: Starting web API server...");
-  init();
+  await initializeNetworkAPI();
 }
