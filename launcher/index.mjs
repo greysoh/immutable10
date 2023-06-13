@@ -21,7 +21,6 @@ if (Deno.args[0]) {
     }
 
     case "debug-net": {
-      console.log("Starting networking extensions...");
       await initializeNetworkAPI();
 
       break;

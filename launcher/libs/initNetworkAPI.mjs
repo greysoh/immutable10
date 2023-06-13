@@ -1,7 +1,8 @@
-import { init } from "../plusapi/index.mjs";
+import { init } from "../kitsuneapi/index.mjs";
 import { getVirtNetworkDevices } from "./getNetworkDevices.mjs";
 
 export async function initializeNetworkAPI() {
+  console.log("Starting Kitsune API...");
   console.log(" - INIT TASK: Starting 'hello' request loop...");
   const virtNetDevices = await getVirtNetworkDevices();
 

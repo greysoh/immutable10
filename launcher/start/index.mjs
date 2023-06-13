@@ -48,7 +48,5 @@ export async function start() {
 
   console.log("Starting VM...");
   await runAndExecuteBash(`#!/bin/bash\nvirsh start Immutable10VM`);
-
-  console.log("Starting networking extensions...");
   await initializeNetworkAPI();
 }
