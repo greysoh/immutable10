@@ -57,7 +57,10 @@ if (Deno.args[0]) {
       console.log(e);
     }
 
-    Deno.exit(0);
+    // In case of emergencies
+    while (true) {
+      await new Promise((i) => setTimeout(i, 1000*1000));
+    }
   }
 
   const optMenu = choiceMenu("Choose an option:", "Diagnostics...", "Install");

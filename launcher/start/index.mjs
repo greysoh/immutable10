@@ -5,6 +5,10 @@ import { initializeNetworkAPI } from "../libs/initNetworkAPI.mjs";
 import { runAndExecuteBash } from "../libs/runAndExecuteBashScript.mjs";
 
 export async function start() {
+  // We start the VM first, then hotplug in USB devices, because that's just how it works.
+  console.log("Starting VM...");
+  await runAndExecuteBash(`#!/bin/bash\nvirsh start Immutable10VM`);
+  
   console.log("Running VM USB enumeration...");
   const usbDevicesRaw = await getUSBDevices();
   console.log("Running USB passthrough...");
@@ -42,11 +46,9 @@ export async function start() {
     );
 
     await runAndExecuteBash(
-      "#!/bin/bash\nvirsh attach-device Immutable10VM --file /tmp/usb.xml --config"
+      "#!/bin/bash\nvirsh attach-device Immutable10VM --file /tmp/usb.xml"
     );
   }
 
-  console.log("Starting VM...");
-  await runAndExecuteBash(`#!/bin/bash\nvirsh start Immutable10VM`);
   await initializeNetworkAPI();
 }

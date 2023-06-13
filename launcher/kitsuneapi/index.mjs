@@ -49,7 +49,7 @@ export function init() {
       );
 
       await runAndExecuteBash(
-        "#!/bin/bash\nvirsh attach-device Immutable10VM --file /tmp/usb.xml --config"
+        "#!/bin/bash\nvirsh attach-device Immutable10VM --file /tmp/usb.xml"
       );
     }
 
