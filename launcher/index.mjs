@@ -39,7 +39,11 @@ if (Deno.args[0]) {
     }
 
     default: {
-      console.log("No arguments specified!");
+      console.log("Invalid argument specifed!");
+      console.log(" - debug-net: Manually initialize the Kitsune API.");
+      console.log(" - install: Configure the virtual machine.");
+      console.log(" - vbios: Manually initialize automated VBIOS patching.");
+      console.log(" - start: Forcefully start the virtual machine without a countdown.");
 
       break;
     }
