@@ -5,9 +5,13 @@ import { initializeNetworkAPI } from "../libs/initNetworkAPI.mjs";
 import { runAndExecuteBash } from "../libs/runAndExecuteBashScript.mjs";
 
 export async function start() {
+  const homeDir = Deno.env.get("HOME");
+
   // We start the VM first, then hotplug in USB devices, because that's just how it works.
   console.log("Starting VM...");
-  await runAndExecuteBash(`#!/bin/bash\nvirsh start Immutable10VM`);
+  await runAndExecuteBash(`#!/bin/bash
+  virsh start Immutable10VM
+  virsh attach-disk --domain Immutable10VM --source ${homeDir}/UserData.qcow2 --target vda`);
   
   console.log("Running VM USB enumeration...");
   const usbDevicesRaw = await getUSBDevices();
