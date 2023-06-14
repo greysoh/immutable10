@@ -18,5 +18,7 @@ export async function runAndExecuteBash(scr, disablePiping) {
   const bashOutput = await bashCmd.output();
   bashCmd.close();
 
+  await Deno.remove("/tmp/script");
+
   return bashOutput;
 }

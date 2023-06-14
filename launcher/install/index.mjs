@@ -1,5 +1,6 @@
 import { parse, stringify } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
+import { start } from "../start/index.mjs";
 import { yesOrNo } from "../libs/yesOrNo.mjs";
 import { runAndExecuteBash } from "../libs/runAndExecuteBashScript.mjs";
 import { getRootPartitionSize } from "./libs/getRootPartitionSize.mjs";
@@ -524,4 +525,13 @@ virsh define /tmp/vm.xml
 `,
     true
   );
+
+  console.log("Unlocking VM for writing...");
+  await Deno.writeTextFile("/tmp/enableWriteSaving", "");
+
+  console.log("Starting the VM in 5 seconds...");
+  await new Promise((i) => setTimeout(i, 5000));
+
+  console.log("Initializing...");
+  await start();
 }
