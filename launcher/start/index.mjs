@@ -11,7 +11,7 @@ export async function start() {
   console.log("Starting VM...");
   await runAndExecuteBash(`#!/bin/bash
   virsh start Immutable10VM
-  virsh attach-disk --domain Immutable10VM --source ${homeDir}/UserData.qcow2 --target vda`);
+  virsh attach-disk --domain Immutable10VM --source ${homeDir}/UserData.qcow2 --target vda --driver qemu --subdriver qcow2`);
   
   console.log("Running VM USB enumeration...");
   const usbDevicesRaw = await getUSBDevices();
