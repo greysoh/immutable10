@@ -7,6 +7,9 @@ import { getEligibleIOMMUGroups } from "../libs/getEligibleIOMMUGroups.mjs";
 import { terriblyBruteForceRoundingDownCPUOrMemory } from "./libs/terriblyBruteForceRounding.mjs";
 
 export async function installer() {
+  // Username needed for later
+  const username = Deno.env.get("USER");
+
   console.log("\n############ CPU CONFIGURATION ############");
 
   const shouldRoundDownCPU = yesOrNo(
@@ -484,7 +487,10 @@ ${miscDriverNames.length != 0 ? `modprobe ${miscDriverNames.join(" ")}` : ""}
 
 # Bind VTconsoles: might not be needed
 echo 1 > /sys/class/vtconsole/vtcon0/bind
-echo 1 > /sys/class/vtconsole/vtcon1/bind`;
+echo 1 > /sys/class/vtconsole/vtcon1/bind
+
+# Run launcher stop hook
+${username == "root" ? "/root/launcher stophook" : `/home/${username}/launcher stophook`}`;
 
   // Actual path: /etc/libvirt/hooks/qemu.d/Immutable10VM/prepare/begin/start.sh
   await Deno.writeTextFile("/tmp/start.sh", startCommand);

@@ -8,6 +8,7 @@ import { initializeNetworkAPI } from "./libs/initNetworkAPI.mjs";
 import { ezPatchVBIOS } from "./diags/ezpatchVBIOS/index.js";
 import { installer } from "./install/index.mjs";
 import { start } from "./start/index.mjs";
+import { stop } from "./stop/index.mjs";
 
 console.log(`Immutable10 Launcher ${verInfo.ver} ("${verInfo.codename}")`)
 if (verInfo.experimental) console.log("This is EXPERIMENTAL. Your computer may catch on fire, if you use this build. Thanks!");
@@ -38,13 +39,20 @@ if (Deno.args[0]) {
       break;
     }
 
+    case "stophook": {
+      await stop();
+
+      break;
+    }
+
     default: {
       console.log("Invalid argument specifed!");
       console.log(" - debug-net: Manually initialize the Kitsune API.");
+      console.log(" - stophook: Hook ran when the VM stops to run snapshots.");
       console.log(" - install: Configure the virtual machine.");
       console.log(" - vbios: Manually initialize automated VBIOS patching.");
       console.log(" - start: Forcefully start the virtual machine without a countdown.");
-
+      
       break;
     }
   }
