@@ -359,6 +359,8 @@ virt-install ${opts.join(" ")}`);
   const vmXML = parse(vmOutputXMLFix);
 
   console.log(" - Enabling QoL features...");
+  vmXML.domain.cpu["@mode"] = "host-passthrough";
+  
   vmXML.domain.features.kvm = {
     hidden: {
       "@state": "on",
@@ -371,12 +373,26 @@ virt-install ${opts.join(" ")}`);
     "#text": null,
   };
 
+  // For some reason, virt-install doesn't add the on_poweroff, reboot, and crash fixes,
+  // to make reboots work properly. Guess we have to fix it ourselves!
+  vmXML.domain.on_poweroff = {
+    "#text": "destroy"
+  }
+  
+  vmXML.domain.on_reboot = {
+    "#text": "restart"
+  };
+
+  vmXML.domain.on_crash = {
+    "#text": "restart"
+  };
+
   console.log(" - Importing created VM XML...");
   await Deno.writeTextFile("/tmp/vm.xml", stringify(vmXML));
 
   console.log(" - Setting up hooks...");
 
-  // Scripts burrowed from https://github.com/QaidVoid/Complete-Single-GPU-Passthrough
+  // Original scripts from https://github.com/QaidVoid/Complete-Single-GPU-Passthrough
   // Actual path: /etc/libvirt/hooks/qemu
   await Deno.writeTextFile(
     "/tmp/hooksdispatch",
