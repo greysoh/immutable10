@@ -12,5 +12,5 @@ virsh snapshot-create-as --domain Immutable10VM --name OS`);
 virsh snapshot-revert --domain Immutable10VM --snapshotname OS`)
   }
 
-  await runAndExecuteBash("#!/bin/bash\nsudo shutdown");
+  await runAndExecuteBash("#!/bin/bash\nsudo systemctl poweroff");
 }
