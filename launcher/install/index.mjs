@@ -93,17 +93,9 @@ export async function installer() {
   const newPartitionSize = shouldRoundDownStorage
     ? terriblyBruteForceRoundingDownCPUOrMemory(rootPartitionSize / 2, 25)
     : rootPartitionSize / 2;
-  
-  const newUserPartitionSize = newPartitionSize / 2;
-  
   console.log(
-    "Final main virtual drive storage size (in gigabytes, rounded): " +
+    "Final storage size (in gigabytes, rounded): " +
       Math.floor(newPartitionSize)
-  );
-
-  console.log(
-    "Final user virtual drive storage size (in gigabytes, rounded): " +
-      Math.floor(newUserPartitionSize)
   );
 
   console.log("\n############ PCIe CONFIGURATION ############");
@@ -310,17 +302,20 @@ export async function installer() {
 
   // Paths to all the different disks and ISOs.
   const diskDir = `${Deno.env.get("HOME")}/Windows.qcow2`;
-  const userDiskDir = `${Deno.env.get("HOME")}/UserData.qcow2`;
   const windowsISO = `${Deno.env.get("HOME")}/Windows.iso`;
   const virtioISO = `${Deno.env.get("HOME")}/virtio-win.iso`;
 
   console.log(" - Creating hard disk...");
-  const diskCreationCmd = await runAndExecuteBash(`#!/bin/bash
-qemu-img create -f qcow2 ${diskDir} ${newPartitionSize}G
-qemu-img create -f qcow2 ${userDiskDir} ${newUserPartitionSize}G
-`);
+  const diskCreationCmd = Deno.run({
+    cmd: ["qemu-img", "create", "-f", "qcow2", diskDir, `${newPartitionSize}G`],
+    stdout: "piped",
+    stderr: "piped",
+  });
 
-  const diskOutputString = new TextDecoder().decode(diskCreationCmd);
+  const diskOutput = await diskCreationCmd.output();
+  diskCreationCmd.close();
+
+  const diskOutputString = new TextDecoder().decode(diskOutput);
 
   for (const line of diskOutputString.split("\n")) {
     if (line == "") continue;
@@ -330,8 +325,6 @@ qemu-img create -f qcow2 ${userDiskDir} ${newUserPartitionSize}G
   console.log(" - Creating virtual machine XML...");
 
   // Options to create the VM with.
-  // And yes, not attaching the userdata partition is intentional.
-  
   const opts = [
     "--name=Immutable10VM",
     `--ram=${totalMemory}`,
