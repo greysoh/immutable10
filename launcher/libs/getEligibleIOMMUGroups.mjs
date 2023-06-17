@@ -51,7 +51,7 @@ done;`);
       group.push(info);
     }
 
-    groups.push(group);
+    if (group.length != 0) groups.push(group);
   }
 
   return groups;
