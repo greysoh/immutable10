@@ -10,6 +10,8 @@ import { installer } from "./install/index.mjs";
 import { start } from "./start/index.mjs";
 import { stop } from "./stop/index.mjs";
 
+import { options } from "./buildOpts.default.js";
+
 console.log(`Immutable10 Launcher ${verInfo.ver} ("${verInfo.codename}")`)
 if (verInfo.experimental) console.log("This is EXPERIMENTAL. Your computer may catch on fire, if you use this build. Thanks!");
 
@@ -40,6 +42,11 @@ if (Deno.args[0]) {
     }
 
     case "stophook": {
+      if (!options.enableAutoImmutability && Deno.args[1] != "force") {
+        console.log("Automatic immutability is disabled. Add the option 'force' to force this to run. Exiting...");
+        Deno.exit(1);
+      }
+
       await stop();
 
       break;

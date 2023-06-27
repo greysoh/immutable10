@@ -1,2 +1,4 @@
 launcher/launcher*
 node_modules
+
+buildOpts.js
