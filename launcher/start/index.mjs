@@ -1,5 +1,6 @@
 import { stringify } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
+import { getVMName } from "../libs/getVMName.mjs";
 import { getUSBDevices } from "../libs/getUSBDevices.mjs";
 import { initializeNetworkAPI } from "../libs/initNetworkAPI.mjs";
 import { runAndExecuteBash } from "../libs/runAndExecuteBashScript.mjs";
@@ -7,7 +8,7 @@ import { runAndExecuteBash } from "../libs/runAndExecuteBashScript.mjs";
 export async function start() {
   // We start the VM first, then hotplug in USB devices, because that's just how it works.
   console.log("Starting VM...");
-  await runAndExecuteBash(`#!/bin/bash\nvirsh start Immutable10VM`);
+  await runAndExecuteBash(`#!/bin/bash\nvirsh start ${getVMName()}`);
   
   console.log("Running VM USB enumeration...");
   const usbDevicesRaw = await getUSBDevices();
@@ -46,7 +47,7 @@ export async function start() {
     );
 
     await runAndExecuteBash(
-      "#!/bin/bash\nvirsh attach-device Immutable10VM --file /tmp/usb.xml"
+      `#!/bin/bash\nvirsh attach-device ${getVMName()} --file /tmp/usb.xml`
     );
   }
 

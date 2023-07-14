@@ -2,6 +2,7 @@ import { parse, stringify } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
 import { start } from "../start/index.mjs";
 import { yesOrNo } from "../libs/yesOrNo.mjs";
+import { getVMName } from "../libs/getVMName.mjs";
 import { runAndExecuteBash } from "../libs/runAndExecuteBashScript.mjs";
 import { getRootPartitionSize } from "./libs/getRootPartitionSize.mjs";
 import { getEligibleIOMMUGroups } from "../libs/getEligibleIOMMUGroups.mjs";
@@ -326,7 +327,7 @@ export async function installer() {
 
   // Options to create the VM with.
   const opts = [
-    "--name=Immutable10VM",
+    `--name=${getVMName()}`,
     `--ram=${totalMemory}`,
     `--vcpus='sockets=1,cores=${cpuInfo.cores},threads=${cpuInfo.threads}'`,
     `--cpuset='0-${cpuInfo.cores * cpuInfo.threads - 1}'`,
@@ -493,10 +494,10 @@ echo 1 > /sys/class/vtconsole/vtcon1/bind
 # Run launcher stop hook
 ${username == "root" ? "/root/launcher stophook" : `/home/${username}/launcher stophook`}`;
 
-  // Actual path: /etc/libvirt/hooks/qemu.d/Immutable10VM/prepare/begin/start.sh
+  // Actual path: /etc/libvirt/hooks/qemu.d/VM_NAME/prepare/begin/start.sh
   await Deno.writeTextFile("/tmp/start.sh", startCommand);
 
-  // Actual path: /etc/libvirt/hooks/qemu.d/Immutable10VM/release/end/stop.sh
+  // Actual path: /etc/libvirt/hooks/qemu.d/VM_NAME/release/end/stop.sh
   await Deno.writeTextFile("/tmp/stop.sh", endCommand);
 
   // Very hacky but I'm too lazy to add proper root support.
@@ -514,12 +515,12 @@ chmod +x /tmp/start.sh
 chmod +x /tmp/stop.sh
 
 sudo mkdir -p /etc/libvirt/hooks
-sudo mkdir -p /etc/libvirt/hooks/qemu.d/Immutable10VM/prepare/begin
-sudo mkdir -p /etc/libvirt/hooks/qemu.d/Immutable10VM/release/end
+sudo mkdir -p /etc/libvirt/hooks/qemu.d/${getVMName()}/prepare/begin
+sudo mkdir -p /etc/libvirt/hooks/qemu.d/${getVMName()}/release/end
 
 sudo cp /tmp/hooksdispatch /etc/libvirt/hooks/qemu
-sudo cp /tmp/start.sh /etc/libvirt/hooks/qemu.d/Immutable10VM/prepare/begin/start.sh
-sudo cp /tmp/stop.sh /etc/libvirt/hooks/qemu.d/Immutable10VM/release/end/stop.sh
+sudo cp /tmp/start.sh /etc/libvirt/hooks/qemu.d/${getVMName()}/prepare/begin/start.sh
+sudo cp /tmp/stop.sh /etc/libvirt/hooks/qemu.d/${getVMName()}/release/end/stop.sh
 
 virsh define /tmp/vm.xml
 `,

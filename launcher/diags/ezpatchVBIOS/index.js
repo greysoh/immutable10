@@ -1,7 +1,8 @@
 import { parse, stringify } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
-import { runAndExecuteBash } from "../../libs/runAndExecuteBashScript.mjs";
 import { getEligibleIOMMUGroups } from "../../libs/getEligibleIOMMUGroups.mjs";
+import { runAndExecuteBash } from "../../libs/runAndExecuteBashScript.mjs";
+import { getVMName } from "../../libs/getVMName.mjs";
 import { yesOrNo } from "../../libs/yesOrNo.mjs";
 
 function dumpVBIOSCommands(pciIDs) {
@@ -134,7 +135,7 @@ export async function ezPatchVBIOS() {
 
   console.log("Copying Virtual Machine XML...");
 
-  const vmXMLRaw = await runAndExecuteBash("#!/bin/bash\nvirsh dumpxml Immutable10VM");
+  const vmXMLRaw = await runAndExecuteBash("#!/bin/bash\nvirsh dumpxml " + getVMName());
   const vmXML = new TextDecoder().decode(vmXMLRaw);
 
   console.log("Modifying XML...");
@@ -171,7 +172,7 @@ export async function ezPatchVBIOS() {
   }
 
   console.log("Writing XML...");
-  await Deno.writeTextFile("/tmp/Immutable10VM.xml", stringify(vmXMLParsed));
+  await Deno.writeTextFile(`/tmp/${getVMName()}.xml`, stringify(vmXMLParsed));
   
   await runAndExecuteBash(
     `#!/bin/bash
@@ -179,8 +180,8 @@ export async function ezPatchVBIOS() {
     sudo mkdir /usr/share/vgabios
     sudo cp -r ~/VBIOS/* /usr/share/vgabios
     sudo chmod -R 777 /usr/share/vgabios/*
-    virsh undefine --nvram Immutable10VM
-    virsh define /tmp/Immutable10VM.xml`.split("\n").map((i) => i.trim()).join("\n"),
+    virsh undefine --nvram ${getVMName()}
+    virsh define /tmp/${getVMName()}.xml`.split("\n").map((i) => i.trim()).join("\n"),
     true
   );
 }

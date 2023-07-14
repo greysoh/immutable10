@@ -1,8 +1,9 @@
 import { runAndExecuteBash } from "../libs/runAndExecuteBashScript.mjs";
 import { getUSBDevices } from "../libs/getUSBDevices.mjs";
+import { getVMName } from "../libs/getVMName.mjs";
 
 // @deno-types="npm:@types/express@4.17.15"
-import express, { request } from "npm:express@4.18.2";
+import express from "npm:express@4.18.2";
 import { stringify } from "https://deno.land/x/xml@2.1.1/mod.ts";
 import { exists } from "https://deno.land/std@0.191.0/fs/mod.ts";
 
@@ -51,7 +52,7 @@ export function init() {
       );
 
       await runAndExecuteBash(
-        "#!/bin/bash\nvirsh attach-device Immutable10VM --file /tmp/usb.xml"
+        `#!/bin/bash\nvirsh attach-device ${getVMName()} --file /tmp/usb.xml`
       );
     }
 
