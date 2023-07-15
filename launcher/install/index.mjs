@@ -508,7 +508,6 @@ ${username == "root" ? "/root/launcher stophook" : `/home/${username}/launcher s
     `
 #!/bin/bash
 set -x
-echo "Hello to your empending doom. Bash inside JavaScript - GH"
 
 chmod +x /tmp/hooksdispatch
 chmod +x /tmp/start.sh

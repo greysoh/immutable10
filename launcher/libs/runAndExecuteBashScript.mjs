@@ -1,4 +1,6 @@
-export async function runAndExecuteBash(scr, disablePiping) {
+export async function runAndExecuteBash(script, disablePiping) {
+  // For people that use doas
+  const scr = Deno.env.get("USE_DOAS") ? script.replaceAll("sudo", "doas") : script;
   await Deno.writeTextFile("/tmp/script", scr);
 
   const opts = {
